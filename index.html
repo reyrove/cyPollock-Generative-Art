@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>cyPollock</title>
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="fav.svg">
+  
+  <style>
+    /* --- PERFECT RESET --- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      background: #0a0a0a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+    }
+    
+    /* --- MAIN CONTAINER --- */
+    #main-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      padding: 20px;
+      gap: 8px;
+    }
+    
+    /* --- TITLE (CENTER TOP) --- */
+    .title-bar {
+      text-align: center;
+      flex-shrink: 0;
+      padding: 2px 0;
+      width: 100%;
+    }
+    .title-bar .title {
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 8px;
+      color: rgba(255,255,255,0.85);
+      text-transform: uppercase;
+    }
+    .title-bar .title .accent {
+      color: #c9a84c;
+      font-weight: 400;
+    }
+    
+    /* --- CANVAS CONTAINER --- */
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      min-height: 0;
+      padding: 0 10px;
+      position: relative;
+    }
+    
+    canvas {
+      display: block;
+      box-shadow: 0 0 80px rgba(0,0,0,0.9);
+      image-rendering: auto;
+      touch-action: none;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 2px;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      background: #0a0a0a;
+    }
+    
+    /* --- SHIRT MOCKUP --- */
+    #shirt-mockup {
+      display: none;
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 2px;
+      box-shadow: 0 0 80px rgba(0,0,0,0.9);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    #shirt-mockup.active {
+      display: block;
+      animation: fadeIn 0.6s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    canvas.hidden {
+      display: none;
+    }
+    
+    /* --- BOTTOM BAR --- */
+    .bottom-bar {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      gap: 6px;
+      padding: 4px 0;
+    }
+    
+    /* --- CONTROLS --- */
+    .controls-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .controls {
+      color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.04);
+      padding: 8px 20px;
+      border-radius: 30px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Roboto, Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      border: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: all 0.3s ease;
+      letter-spacing: 0.8px;
+      touch-action: manipulation;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .controls:hover {
+      color: rgba(255,255,255,0.95);
+      border-color: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+    }
+    .controls:active {
+      transform: scale(0.95);
+    }
+    .controls .key {
+      color: rgba(255,255,255,0.5);
+      font-weight: 300;
+    }
+    .controls .sep {
+      color: rgba(255,255,255,0.15);
+      margin: 0 4px;
+    }
+    
+    /* --- SHIRT BUTTON --- */
+    .controls.shirt-btn {
+      border-color: rgba(201, 168, 76, 0.2);
+      color: rgba(201, 168, 76, 0.7);
+      letter-spacing: 1px;
+    }
+    .controls.shirt-btn:hover {
+      border-color: rgba(201, 168, 76, 0.4);
+      color: #c9a84c;
+      background: rgba(201, 168, 76, 0.06);
+    }
+    .controls.shirt-btn.active {
+      border-color: rgba(201, 168, 76, 0.5);
+      color: #c9a84c;
+      background: rgba(201, 168, 76, 0.08);
+    }
+    .controls.shirt-btn .icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+    
+    /* --- INFO ROW --- */
+    .info-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      color: rgba(255,255,255,0.3);
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      flex-wrap: wrap;
+      padding: 2px 0;
+    }
+    .info-row .info-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.02);
+    }
+    .info-row .label {
+      color: rgba(255,255,255,0.25);
+      font-weight: 300;
+    }
+    .info-row .value {
+      color: rgba(255,255,255,0.6);
+      font-weight: 400;
+    }
+    
+    /* --- DESCRIPTION --- */
+    .description {
+      display: block;
+      text-align: center;
+      color: rgba(255,255,255,0.25);
+      font-size: 8px;
+      letter-spacing: 1.2px;
+      line-height: 1.8;
+      padding: 2px 10px;
+      font-weight: 300;
+      max-width: 500px;
+      width: 100%;
+      text-transform: uppercase;
+    }
+    .description .highlight {
+      color: rgba(255,255,255,0.4);
+    }
+    .description .sep {
+      color: rgba(255,255,255,0.08);
+      margin: 0 4px;
+    }
+    
+    /* ============================================
+       RESPONSIVE
+    ============================================ */
+    
+    @media (max-width: 1024px) {
+      #main-container { padding: 16px; gap: 6px; }
+      .title-bar .title { font-size: 20px; letter-spacing: 6px; }
+      .controls { font-size: 10px; padding: 7px 16px; min-height: 34px; }
+      .info-row { font-size: 8.5px; gap: 12px; }
+      .info-row .info-item { padding: 2px 10px; }
+      .description { font-size: 7.5px; letter-spacing: 1px; }
+    }
+    
+    @media (max-width: 768px) {
+      #main-container { padding: 12px; gap: 5px; }
+      .title-bar .title { font-size: 17px; letter-spacing: 5px; }
+      #canvas-container { padding: 0 6px; }
+      .controls { font-size: 9px; padding: 6px 14px; min-height: 32px; letter-spacing: 0.6px; }
+      .controls-row { gap: 6px; }
+      .info-row { font-size: 8px; gap: 10px; }
+      .info-row .info-item { padding: 2px 8px; }
+      .description { font-size: 7px; letter-spacing: 0.8px; padding: 2px 6px; }
+      .controls.shirt-btn .icon { font-size: 12px; }
+    }
+    
+    @media (max-width: 480px) {
+      #main-container { padding: 8px; gap: 4px; }
+      .title-bar .title { font-size: 14px; letter-spacing: 4px; }
+      #canvas-container { padding: 0 4px; }
+      .controls { font-size: 8px; padding: 5px 12px; min-height: 28px; border-radius: 24px; letter-spacing: 0.4px; }
+      .controls-row { gap: 4px; }
+      .info-row { font-size: 7px; gap: 8px; }
+      .info-row .info-item { padding: 2px 6px; gap: 4px; }
+      .description { font-size: 6.5px; letter-spacing: 0.6px; padding: 2px 4px; line-height: 1.6; }
+      .controls.shirt-btn .icon { font-size: 11px; }
+    }
+    
+    @media (max-width: 380px) {
+      #main-container { padding: 6px; gap: 3px; }
+      .title-bar .title { font-size: 12px; letter-spacing: 3px; }
+      #canvas-container { padding: 0 2px; }
+      .controls { font-size: 7px; padding: 4px 10px; min-height: 26px; border-radius: 20px; }
+      .info-row { font-size: 6.5px; gap: 6px; }
+      .info-row .info-item { padding: 1px 5px; border-radius: 14px; }
+      .description { font-size: 6px; letter-spacing: 0.5px; padding: 1px 3px; }
+      .controls.shirt-btn .icon { font-size: 10px; }
+    }
+    
+    @media (orientation: landscape) and (max-height: 500px) {
+      #main-container { padding: 10px 20px; gap: 4px; flex-direction: row; flex-wrap: wrap; }
+      .title-bar { width: 100%; flex-shrink: 0; }
+      .title-bar .title { font-size: 16px; letter-spacing: 4px; }
+      #canvas-container { flex: 1; min-height: 0; height: 100%; padding: 0 8px; }
+      .bottom-bar { width: auto; max-width: 180px; flex-shrink: 0; gap: 4px; padding: 0 4px; }
+      .controls { font-size: 8px; padding: 5px 12px; min-height: 28px; letter-spacing: 0.4px; }
+      .controls-row { flex-direction: column; gap: 4px; }
+      .info-row { font-size: 7px; gap: 6px; flex-direction: column; align-items: stretch; }
+      .info-row .info-item { padding: 2px 8px; justify-content: center; }
+      .description { font-size: 6px; max-width: 160px; padding: 1px 4px; line-height: 1.4; letter-spacing: 0.5px; }
+    }
+    
+    @media (orientation: landscape) and (max-height: 380px) {
+      #main-container { padding: 6px 12px; gap: 3px; }
+      .title-bar .title { font-size: 13px; letter-spacing: 3px; }
+      #canvas-container { padding: 0 4px; }
+      .bottom-bar { max-width: 140px; gap: 3px; }
+      .controls { font-size: 7px; padding: 4px 10px; min-height: 24px; border-radius: 16px; }
+      .info-row { font-size: 6px; gap: 4px; }
+      .info-row .info-item { padding: 1px 6px; }
+      .description { font-size: 5.5px; max-width: 120px; padding: 1px 3px; }
+    }
+    
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      canvas { image-rendering: auto; }
+    }
+    
+    @supports (-webkit-touch-callout: none) {
+      .controls { min-height: 40px; }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .controls, canvas, #shirt-mockup { transition: none; }
+      #shirt-mockup.active { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- MAIN CONTAINER -->
+<div id="main-container">
+
+  <!-- TITLE (CENTER TOP) -->
+  <div class="title-bar">
+    <div class="title"><span class="accent">cy</span>Pollock</div>
+  </div>
+
+  <!-- CANVAS CONTAINER -->
+  <div id="canvas-container">
+    <canvas id="target"></canvas>
+    <img id="shirt-mockup" src="cyPollock.jpg" alt="cyPollock on T-Shirt" />
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar">
+
+    <!-- CONTROLS ROW -->
+    <div class="controls-row">
+      <div class="controls" id="controlsBar">
+        <span class="key">●</span> regenerate <span class="sep">—</span> <span class="key">S</span> save
+      </div>
+      <div class="controls shirt-btn" id="shirtToggle">
+        <span class="icon">◷</span> apparel
+      </div>
+    </div>
+
+    <!-- INFO ROW -->
+    <div class="info-row">
+      <div class="info-item">
+        <span class="label">seed</span>
+        <span class="value" id="seedDisplay">---</span>
+      </div>
+      <div class="info-item">
+        <span class="label">branches</span>
+        <span class="value" id="branchesDisplay">---</span>
+      </div>
+      <div class="info-item">
+        <span class="label">background</span>
+        <span class="value" id="bgDisplay">---</span>
+      </div>
+    </div>
+
+    <!-- DESCRIPTION -->
+    <div class="description">
+      <span class="highlight">cybernetic pollock</span>
+      <span class="sep">·</span>
+      <span class="highlight">10–60 branches</span>
+      <span class="sep">·</span>
+      <span class="highlight">random colors</span>
+      <span class="sep">·</span>
+      <span class="highlight">generative</span>
+      <span class="sep">·</span>
+      <span class="highlight">seed-based</span>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ============================================
+// CYPOLLOCK — PURE JS T-SHIRT EDITION
+// ============================================
+
+// --- DETERMINISTIC RANDOM GENERATOR ---
+class RandomGenerator {
+  constructor(seed) {
+    this.seed = seed;
+    this.state = seed;
+  }
+  rand() {
+    let x = this.state;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    this.state = x;
+    return (x >>> 0) / 4294967296;
+  }
+}
+
+// --- STATE ---
+const ratio = 1 / 1;
+const prefix = 'cyPollock';
+const features = {};
+let seed = Date.now() + Math.random() * 1000000;
+let rng = new RandomGenerator(seed);
+let showingShirt = false;
+let resizeTmr = null;
+let thumbnailTaken = false;
+let animated = false;
+let nextFrame = null;
+
+// --- URL PARAMS ---
+const urlSearchParams = new URLSearchParams(window.location.search);
+const urlParams = Object.fromEntries(urlSearchParams.entries());
+let forceDownloaded = false;
+
+// --- COLOR ARRAYS ---
+const backgroundColours = [
+  '#2F0909', '#2B1B17', '#040720', '#151B54', '#033E3E', '#2C3539', '#254117',
+  '#36013F', '#4B0150', '#550A35', '#3F000F', '#473810', '#004225', '#1F6357',
+  '#25383C', '#191970', '#000000', '#000080', '#25383C', '#3B2F2F', '#3D0C02', '#2E1A47'
+];
+
+const backgroundNames = [
+  'Dark Maroon', 'Midnight', 'Black Blue', 'Night Blue', 'Deep Teal', 'Gunmetal',
+  'Dark Forest Green', 'Deep Purple', 'Dark Purple', 'Purple Lily', 'Chocolate Brown',
+  'Dark Hazel Brown', 'Lotus Green', 'Dark Green Blue', 'DarkSlateGray', 'MidnightBlue',
+  'Black', 'Navy', 'DarkSlateGray', 'Dark Coffee', 'Black Bean', 'Midnight Purple'
+];
+
+const branchColors = [
+  '#DADBDD', '#EEEEEE', '#98AFC7', '#1589FF', '#14A3C7', '#95B9C7', '#6698FF',
+  '#00BFFF', '#5CB3FF', '#BDEDFF', '#B0E0E6', '#E3E4FA', '#9AFEFF', '#16E2F5',
+  '#81D8D0', '#7BCCB5', '#93FFE8', '#50C878', '#728C00', '#08A04B', '#6AA121',
+  '#B0BF1A', '#16F529', '#E2F516', '#FFF8DC', '#FFDAB9', '#FFFF33', '#FFBF00',
+  '#C68E17', '#AF9B60', '#EB5406', '#C36241', '#FF8040', '#F89880', '#F67280',
+  '#F75D59', '#FF0000', '#7D0552', '#E799A3', '#F8B88B', '#FDD7E4', '#F778A1',
+  '#F660AB', '#F52887', '#F535AA', '#FA2A55', '#F433FF', '#822EFF', '#F9B7FF',
+  '#F8F0E3', '#2F0909', '#2B1B17', '#040720', '#151B54', '#033E3E', '#2C3539',
+  '#254117', '#36013F', '#4B0150', '#550A35', '#3F000F', '#473810', '#004225',
+  '#1F6357', '#25383C', '#191970', '#000000', '#000080', '#25383C', '#3B2F2F',
+  '#3D0C02', '#2E1A47'
+];
+
+const branchNames = [
+  'Silver White', 'White Gray', 'Blue Gray', 'Neon Blue', 'Cyan Blue', 'Baby Blue',
+  'Sky Blue Dress', 'DeepSkyBlue', 'Crystal Blue', 'Robin Egg Blue', 'PowderBlue',
+  'Lavender Blue', 'Electric Blue', 'Bright Turquoise', 'Tiffany Blue', 'Blue Green',
+  'Light Aquamarine', 'Emerald', 'Venom Green', 'Irish Green', 'Green Onion',
+  'Acid Green', 'Neon Green', 'Yellow Green Grosbeak', 'Cornsilk', 'PeachPuff',
+  'Neon Yellow', 'Amber', 'Caramel', 'Bullet Shell', 'Red Gold', 'Rust',
+  'Mango Orange', 'Pink Orange', 'Pastel Red', 'Bean Red', 'Red', 'Plum Velvet',
+  'Pink Daisy', 'Pastel Orange', 'Pig Pink', 'Carnation Pink', 'Dark Hot Pink',
+  'Hot Deep Pink', 'Neon Pink', 'Red Pink', 'Bright Neon Pink', 'Blue Magenta',
+  'Blossom Pink', 'Off White', 'Dark Maroon', 'Midnight', 'Black Blue', 'Night Blue',
+  'Deep Teal', 'Gunmetal', 'Dark Forest Green', 'Deep Purple', 'Dark Purple',
+  'Purple Lily', 'Chocolate Brown', 'Dark Hazel Brown', 'Lotus Green',
+  'Dark Green Blue', 'DarkSlateGray', 'MidnightBlue', 'Black', 'Navy',
+  'DarkSlateGray', 'Dark Coffee', 'Black Bean', 'Midnight Purple'
+];
+
+// --- SETUP ---
+function setup() {
+  const backgroundIndex = Math.floor(rng.rand() * backgroundColours.length);
+  features.backgroundColour = backgroundColours[backgroundIndex];
+  features.backgroundName = backgroundNames[backgroundIndex];
+
+  const numOfBranches = Math.floor(rng.rand() * 50) + 10;
+  features.numofBranches = numOfBranches;
+
+  const branchcolor = [];
+  for (let i = 0; i < numOfBranches; i++) {
+    const branchIndex = Math.floor(rng.rand() * branchColors.length);
+    branchcolor[i] = branchColors[branchIndex];
+  }
+  features.Branchcolor = branchcolor;
+}
+
+// --- HELPER FUNCTIONS ---
+function random(min, max) {
+  return rng.rand() * (max - min) + min;
+}
+
+// --- DRAW FUNCTIONS ---
+function drawTree(ctx, w, h, color, x, y, depth) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = rng.rand() * w / 100 + w / 200;
+
+  if (depth < 13) {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - h / 50);
+    ctx.stroke();
+
+    const newX = x;
+    const newY = y - h / 10;
+    const angle = random(-Math.PI, Math.PI);
+    ctx.save();
+    ctx.translate(newX, newY);
+    ctx.rotate(angle);
+
+    if (rng.rand() < 0.3) {
+      ctx.rotate(0.6);
+      ctx.scale(rng.rand() * 0.3 + 0.7, rng.rand() * 0.3 + 0.7);
+      drawTree(ctx, w, h, color, 0, 0, depth + 1);
+      ctx.rotate(-1.2);
+      drawTree(ctx, w, h, color, 0, 0, depth + 1);
+    } else {
+      drawTree(ctx, w, h, color, 0, 0, depth);
+    }
+
+    ctx.restore();
+  }
+}
+
+// --- MAIN DRAW ---
+function drawCanvas() {
+  window.cancelAnimationFrame(nextFrame);
+
+  const canvas = document.getElementById('target');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // Fill background
+  ctx.fillStyle = features.backgroundColour;
+  ctx.fillRect(0, 0, w, h);
+
+  // Draw branches
+  for (let i = 0; i < features.numofBranches; i++) {
+    const color1 = features.Branchcolor[i];
+    const W1 = rng.rand() * w;
+    const H1 = rng.rand() * h;
+    const x = rng.rand() * w / 2 + w / 2;
+    const y = rng.rand() * h / 2 + h / 2;
+    const depth = 0;
+
+    drawTree(ctx, W1, H1, color1, x, y, depth);
+  }
+
+  if ('forceDownload' in urlParams && forceDownloaded === false) {
+    forceDownloaded = true;
+    autoDownloadCanvas();
+    if (window.parent) {
+      window.parent.postMessage('forceDownloaded', '*');
+    }
+  }
+
+  if (animated) {
+    nextFrame = window.requestAnimationFrame(drawCanvas);
+  }
+
+  updateUI();
+}
+
+// --- UPDATE UI ---
+function updateUI() {
+  document.getElementById('seedDisplay').textContent = String(seed).slice(0, 8);
+  document.getElementById('branchesDisplay').textContent = features.numofBranches || '---';
+  document.getElementById('bgDisplay').textContent = features.backgroundName || '---';
+}
+
+// --- REGENERATE ---
+function regenerate() {
+  seed = Date.now() + Math.random() * 1000000;
+  rng = new RandomGenerator(seed);
+  thumbnailTaken = false;
+  
+  setup();
+  
+  if (showingShirt) {
+    toggleShirt();
+  }
+  
+  layoutCanvas();
+}
+
+// --- TOGGLE SHIRT ---
+function toggleShirt() {
+  showingShirt = !showingShirt;
+  const canvas = document.getElementById('target');
+  const shirtMockup = document.getElementById('shirt-mockup');
+  const shirtToggle = document.getElementById('shirtToggle');
+  
+  if (showingShirt) {
+    canvas.classList.add('hidden');
+    shirtMockup.classList.add('active');
+    shirtToggle.classList.add('active');
+    shirtToggle.innerHTML = '<span class="icon">◷</span> artwork';
+  } else {
+    canvas.classList.remove('hidden');
+    shirtMockup.classList.remove('active');
+    shirtToggle.classList.remove('active');
+    shirtToggle.innerHTML = '<span class="icon">◷</span> apparel';
+  }
+}
+
+// --- DOWNLOAD ---
+function autoDownloadCanvas() {
+  const canvas = document.getElementById('target');
+  const link = document.createElement('a');
+  
+  const seedStr = String(seed).slice(0, 8);
+  link.download = prefix + '_Seed' + seedStr + '.png';
+  
+  if (showingShirt) {
+    link.href = document.getElementById('shirt-mockup').src;
+  } else {
+    link.href = canvas.toDataURL('image/png', 1.0);
+  }
+  link.click();
+}
+
+// --- LAYOUT CANVAS ---
+function layoutCanvas() {
+  window.cancelAnimationFrame(nextFrame);
+  
+  const container = document.getElementById('canvas-container');
+  const containerRect = container.getBoundingClientRect();
+  let maxWidth = containerRect.width;
+  let maxHeight = containerRect.height;
+  
+  maxWidth = Math.max(maxWidth, 80);
+  maxHeight = Math.max(maxHeight, 80);
+  
+  let cWidth = maxWidth;
+  let cHeight = cWidth / ratio;
+  
+  if (cHeight > maxHeight) {
+    cHeight = maxHeight;
+    cWidth = maxHeight * ratio;
+  }
+  
+  cWidth = Math.max(cWidth, 80);
+  cHeight = Math.max(cHeight, 80);
+  
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  
+  let targetWidth = cWidth * dpr;
+  let targetHeight = cHeight * dpr;
+  
+  if ('forceWidth' in urlParams) {
+    targetWidth = parseInt(urlParams.forceWidth);
+    targetHeight = Math.floor(targetWidth / ratio);
+    dpr = 1;
+  }
+  
+  const canvas = document.getElementById('target');
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  canvas.style.width = cWidth + 'px';
+  canvas.style.height = cHeight + 'px';
+  
+  const shirtMockup = document.getElementById('shirt-mockup');
+  shirtMockup.style.width = cWidth + 'px';
+  shirtMockup.style.height = cHeight + 'px';
+  
+  drawCanvas();
+}
+
+// --- RESIZE ---
+function handleResize() {
+  clearTimeout(resizeTmr);
+  resizeTmr = setTimeout(() => {
+    layoutCanvas();
+  }, 100);
+}
+
+// --- KEYBOARD ---
+document.addEventListener('keydown', function(e) {
+  if (e.key === 's' || e.key === 'S') {
+    e.preventDefault();
+    autoDownloadCanvas();
+  }
+  if (e.key === 'r' || e.key === 'R') {
+    e.preventDefault();
+    regenerate();
+  }
+  if (e.key === 't' || e.key === 'T') {
+    e.preventDefault();
+    toggleShirt();
+  }
+});
+
+// --- CONTROLS ---
+document.getElementById('controlsBar').addEventListener('click', regenerate);
+document.getElementById('controlsBar').addEventListener('touchend', function(e) {
+  e.preventDefault();
+  regenerate();
+});
+
+document.getElementById('shirtToggle').addEventListener('click', toggleShirt);
+document.getElementById('shirtToggle').addEventListener('touchend', function(e) {
+  e.preventDefault();
+  toggleShirt();
+});
+
+// --- WINDOW ---
+window.addEventListener('resize', handleResize);
+window.addEventListener('orientationchange', function() {
+  setTimeout(handleResize, 400);
+});
+
+// --- VISIBILITY ---
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) {
+    setTimeout(() => {
+      if (!showingShirt) {
+        drawCanvas();
+      }
+    }, 100);
+  }
+});
+
+// --- INIT ---
+function init() {
+  setup();
+  layoutCanvas();
+  updateUI();
+  
+  console.log('cyPollock — Pure JS T-Shirt Edition');
+  console.log('◷ Press T to toggle apparel view');
+  console.log('Press S to save');
+  console.log('Press R to regenerate');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+// Expose functions globally
+window.regenerate = regenerate;
+window.autoDownloadCanvas = autoDownloadCanvas;
+window.toggleShirt = toggleShirt;
+window.drawCanvas = drawCanvas;
+window.layoutCanvas = layoutCanvas;
+</script>
+</body>
+</html>
